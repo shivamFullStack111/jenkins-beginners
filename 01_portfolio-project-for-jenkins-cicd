@@ -1,0 +1,73 @@
+pipeline {
+    // ✅ Define where the pipeline should run
+    agent { label 'my-remote-server' } 
+    // 'my-remote-server' is the label of the Jenkins agent/node where this pipeline will execute
+
+    stages {
+
+        // ================================
+        stage ('Code') {
+            // 🔹 Stage 1: Pull source code from GitHub
+            steps {
+                echo 'code is pulling...'
+
+                // 🔹 Pull code from the 'main' branch of the specified GitHub repository
+                git branch: 'main', url: 'https://github.com/shivamFullStack111/portfolio-project-for-jenkins-cicd'
+
+                echo 'code pull successful...'
+            }
+        }
+
+        // ================================
+        stage ('Build') {
+            // 🔹 Stage 2: Build Docker image from the pulled code
+            steps {
+                echo 'code is building...'
+
+                // 🔹 Build the Docker image using the Dockerfile in the current directory
+                // 🔹 Tag the image as: shivamfullstack111/new-portfolio-project:latest
+                sh 'docker build -t shivamfullstack111/new-portfolio-project:latest .'
+
+                echo 'code build successful...'
+            }
+        }
+
+        // ================================
+        stage ('Push') {
+            // 🔹 Stage 3: Push Docker image to Docker Hub
+            steps {
+                echo 'Image is uploading to Docker Hub...'
+
+                // 🔐 Securely fetch DockerHub credentials from Jenkins Credentials Store
+                withCredentials([usernamePassword(
+                    credentialsId: 'Docker-Credentail',     // ID of the DockerHub credentials stored in Jenkins
+                    usernameVariable: 'DOCKER_USER',        // Runtime variable to store username
+                    passwordVariable: 'DOCKER_PASS'         // Runtime variable to store password
+                )]) {
+                    // 🔐 Perform Docker login using the credentials
+                    sh 'docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"'
+
+                    // 🔼 Push the built Docker image to DockerHub
+                    sh 'docker push shivamfullstack111/new-portfolio-project:latest'
+                }
+
+                echo 'Image pushed successfully...'
+            }
+        }
+
+        // ================================
+        stage ("Deploy") {
+            // 🔹 Stage 4: Deploy the Docker container
+            steps {
+                echo 'Deploying...'
+
+                // 🏃 Run the Docker container in detached mode, exposing port 5173
+                // -d: Run container in background
+                // -p 5173:5173 → maps host port 5173 to container port 5173
+                sh 'docker run -d -p 5173:5173 shivamfullstack111/new-portfolio-project:latest'
+
+                echo 'Deploy success...'
+            }
+        }
+    }
+}
