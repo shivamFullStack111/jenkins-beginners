@@ -1,0 +1,51 @@
+@Library("My-shared-variables") _
+pipeline {
+    agent { label 'my-remote-server' }
+    
+    environment {
+        DOCKER_IMAGE_NAME = "shivamfullstack111/portfolio-frontend:latest"
+        DOCKER_CONTAINER_NAME="portfolio-container"
+    }
+    
+    stages {
+        stage ('Code') {
+            steps {
+               script {
+                   git_clone("https://github.com/shivamFullStack111/portfolio-project-for-jenkins-cicd","main")
+               }
+            }
+        }
+        stage ('Build') {
+            steps {
+                // if container with same name is existed then delete it and start new image to avoid conflict and build new image 
+                script {
+                    delete_container_if_exists_and_build_image("${DOCKER_CONTAINER_NAME}","${DOCKER_IMAGE_NAME}")
+                }
+            }
+        }
+        stage ('Docker Login') {
+            steps {
+                // docker login 
+                withCredentials([usernamePassword(credentialsId:'Docker-Credentail',usernameVariable:'DOCKER_USER',passwordVariable:'DOCKER_PASS')]){
+                    sh 'docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}' 
+                }
+            }
+        }
+        stage ('Docker image push to docker hub') {
+            steps {
+                sh "docker push ${DOCKER_IMAGE_NAME}"
+            }
+        }
+        stage ('Deploy') {
+            steps {
+                sh "docker run -d --name ${DOCKER_CONTAINER_NAME} -p 5173:5173 ${DOCKER_IMAGE_NAME}"
+            }
+        }
+    }
+}
+
+
+
+//------------------------------------------------------------------------------------------------------------------------------------
+
+// SHARED LIBRARY REPO URL:- https://github.com/shivamFullStack111/jenkins-shared-library
