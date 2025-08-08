@@ -1,0 +1,73 @@
+pipeline {
+    agent { label 'my-remote-server' } 
+
+    stages {
+        stage ('Code') {
+            steps {
+                echo '📥 Pulling source code from GitHub...'
+
+                // Pulling latest code from the main branch
+                git branch: 'main', url: 'https://github.com/shivamFullStack111/portfolio-project-for-jenkins-cicd'
+
+                echo '✅ Code pulled successfully.'
+            }
+        }
+
+        stage ('Build') {
+            steps {
+                echo '🔧 Building Docker image...'
+
+                // Building a Docker image from the current directory's Dockerfile
+                sh 'docker build -t shivamfullstack111/new-portfolio-project:latest .'
+
+                echo '✅ Docker image built successfully.'
+            }
+        }
+
+        stage ('Push') {
+            steps {
+                echo '🚀 Pushing image to Docker Hub...'
+
+                // Using Jenkins credentials to login to Docker Hub securely
+                withCredentials([usernamePassword(
+                    credentialsId: 'Docker-Credentail',   // Jenkins credential ID
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    // Logging in to Docker Hub using secured credentials
+                    sh 'docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"'
+
+                    // Pushing latest Docker image to Docker Hub
+                    sh 'docker push shivamfullstack111/new-portfolio-project:latest'
+                }
+
+                echo '✅ Docker image pushed successfully to Docker Hub.'
+            }
+        }
+
+        stage ('Deploy') {
+            steps {
+                echo '🚀 Deploying the container...'
+
+                // Step 1: Check if container with same name already exists
+                // If it exists, stop and remove it to avoid port or naming conflicts
+                sh '''
+                    if [ "$(docker ps -a --filter name=portfolio-container --format "{{.Names}}")" = "portfolio-container" ]; then 
+                        echo "🧹 Existing Docker container found. Removing it..."
+                        docker rm -f portfolio-container
+                    else 
+                        echo "✅ No existing container with name 'portfolio-container' found."
+                    fi 
+                '''
+
+                // Step 2: Run a new container from the latest Docker image
+                // -d → detached mode
+                // -p 5173:5173 → map port 5173 of host to container
+                // --name → name the container so we can manage it easily
+                sh 'docker run -d -p 5173:5173 --name portfolio-container shivamfullstack111/new-portfolio-project:latest'
+
+                echo '✅ Deployment complete. Container is now running.'
+            }
+        }
+    }
+}
