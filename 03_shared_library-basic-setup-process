@@ -1,0 +1,80 @@
+
+// ========================================================
+// STEP 1: Load the Shared Library from Jenkins Settings
+// "Hello-World" must match the name given in Jenkins global settings
+// This library should be connected to a GitHub repo that contains your shared functions
+@Library("Hello-World") _
+
+
+// ========================================================
+// STEP 2: Begin the Declarative Pipeline Block
+pipeline {
+
+    // ====================================================
+    // STEP 3: Agent Selection
+    // You can define specific agents like 'linux' or 'docker-agent'
+    // Leave blank if you're using the default agent
+    agent { label "" }
+
+    // ====================================================
+    // STEP 4: Define Stages of the Pipeline
+    stages {
+
+        // ================================
+        // STEP 5: Call Shared Library Function
+        stage('Print Hello-world') {
+            steps {
+                script {
+                    // This function should be defined in:
+                    // GitHub repo → vars/hello_world.groovy
+                    hello_world()
+                }
+            }
+        }
+    }
+}
+
+
+
+// ------------------------------------------------------------------------------------------------------------------
+
+// How to create and set up the shared library
+
+// ========================================================
+// ✅ SHARED LIBRARY SETUP GUIDE
+//
+// 1. Create a GitHub repository for your shared library
+//    📁 Example: jenkins-shared-library
+//
+// 2. Inside that repo, follow this structure:
+//    your-repo-name/
+//      ├── vars/
+//         └── hello_world.groovy      ← function file
+//                        
+//
+// 3. Example code inside hello_world.groovy:
+//    def call() {
+//        echo "Hello from Shared Library!"
+//    }
+//
+// 4. Push this repo to GitHub:
+//    https://github.com/shivamFullStack111/jenkins-shared-library.git
+//
+// 5. Go to Jenkins Dashboard → Manage Jenkins → Configure System
+//    Scroll to: 🌐 Global Pipeline Libraries
+//    Click: ➕ Add
+//    🔧 Configure like this:
+//      - Name: Hello-World                ← (must match @Library("Hello-World"))
+//      - Default version: main
+//      - Retrieval method: Modern SCM
+//      - SCM: Git
+//      - Project Repository: https://github.com/shivamFullStack111/jenkins-shared-library.git
+//      - Credentials: (only if repo is private)
+//
+// 6. Use it in any Jenkinsfile like:
+//    @Library("Hello-World") _
+//    hello_world()
+//
+// 7. Run the Jenkins job and see the shared function output.
+// ========================================================
+
