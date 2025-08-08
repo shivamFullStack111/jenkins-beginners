@@ -1,0 +1,16 @@
+@Library("My-shared-variables") _
+
+pipeline{
+    agent { label "my-remote-server" } 
+    stages{
+        stage ("git-clone"){
+          steps{
+
+//          calling shared function with github URL and BRANCH which pull code from github
+            script{
+                git_clone("https://github.com/shivamFullStack111/jenkins-shared-library","main")
+            }
+          }
+        }
+    }
+}
